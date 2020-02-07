@@ -145,7 +145,8 @@ public class YapiCoolerImpl implements YapiCooler {
         String nowDateTime = new SimpleDateFormat("yyyyMMddHHmm").format(System.currentTimeMillis());
         for (Project project : projectList) {
             HttpResponse exportResult = httpUtil.doGet("/api/plugin/export?type=json&pid=" + project.getId() + "&status=all&isWiki=false", cookieHolder.getCookies());
-            String jsonString = EntityUtils.toString(exportResult.getEntity());
+            String jsonString = EntityUtils.toString(exportResult.getEntity(),StandardCharsets.UTF_8);
+
             //用户自定义路径+当前时间+组名+项目名
             File file = new File(outputPath + separator + nowDateTime + separator + project.getGroupName() + separator + project.getName() + ".json");
             if (!file.getParentFile().exists()) {
@@ -155,7 +156,7 @@ public class YapiCoolerImpl implements YapiCooler {
             if (file.exists()) {
                 Files.delete(Paths.get(file.getPath()));
             }
-
+            System.out.println(jsonString);
             file.createNewFile();
             try (Writer write = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
                 write.write(jsonString);
