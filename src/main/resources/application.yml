@@ -1,0 +1,14 @@
+cooler:
+  schedule: "0/59 * * * * ? "
+yapi:
+  host: http://192.168.0.100
+  outputPath: /main/yapi
+  adminUsername:
+  adminPassword:
+http:
+  connectTimeout: 60000
+
+logging:
+  level:
+    root: info
+  file: /main/yapi/logs/yapi-cooler.log
