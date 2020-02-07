@@ -31,7 +31,7 @@ logging:
 ```
 1.3 运行java -jar yapi-cooler.jar
 
-1.4 采用外部配置文件运行 java jar yapi-cooler.jar -spring.config.location=application.yml
+1.4 采用外部配置文件运行 java jar yapi-cooler.jar --spring.config.location=application.yml
 
 **二、下载源码打包（依赖maven）**
 
