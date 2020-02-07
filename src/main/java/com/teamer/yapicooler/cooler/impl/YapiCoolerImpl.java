@@ -27,7 +27,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import static com.teamer.yapicooler.util.Constant.*;
-import static java.io.File.pathSeparator;
+import static java.io.File.separator;
 import static org.apache.http.cookie.SM.COOKIE;
 import static org.apache.http.cookie.SM.SET_COOKIE;
 
@@ -51,7 +51,6 @@ public class YapiCoolerImpl implements YapiCooler {
      */
     @Value("${yapi.outputPath}")
     private String outputPath;
-
 
 
     @Autowired
@@ -124,7 +123,7 @@ public class YapiCoolerImpl implements YapiCooler {
             List<Project> projectList = new LinkedList<>();
             //请求组内项目列表
             HttpResponse getProjectResult = httpUtil.doGet("/api/project/list?group_id=" + group.getId() + "&page=1&limit=10", cookieHolder.getCookies());
-            JSONArray projectJsonArray = JSON.parseObject(EntityUtils.toString(getProjectResult.getEntity())).getJSONObject("data").getJSONArray("list");
+            JSONArray projectJsonArray = JSON.parseObject(EntityUtils.toString(getProjectResult.getEntity())).getJSONObject(DATA_MESSAGE).getJSONArray("list");
 
             //构建组项目列表
             for (Object object : projectJsonArray) {
@@ -146,10 +145,9 @@ public class YapiCoolerImpl implements YapiCooler {
         String nowDateTime = new SimpleDateFormat("yyyyMMddHHmm").format(System.currentTimeMillis());
         for (Project project : projectList) {
             HttpResponse exportResult = httpUtil.doGet("/api/plugin/export?type=json&pid=" + project.getId() + "&status=all&isWiki=false", cookieHolder.getCookies());
-            String jsonString = null;
-            jsonString = EntityUtils.toString(exportResult.getEntity());
+            String jsonString = EntityUtils.toString(exportResult.getEntity());
             //用户自定义路径+当前时间+组名+项目名
-            File file = new File(outputPath + pathSeparator + nowDateTime + pathSeparator + project.getGroupName() + pathSeparator + project.getName() + ".json");
+            File file = new File(outputPath + separator + nowDateTime + separator + project.getGroupName() + separator + project.getName() + ".json");
             if (!file.getParentFile().exists()) {
                 file.getParentFile().mkdirs();
             }
@@ -163,7 +161,7 @@ public class YapiCoolerImpl implements YapiCooler {
                 write.write(jsonString);
                 write.flush();
             }
-            System.out.println(project.getName()+"完成备份");
+            System.out.println(project.getName() + "完成备份");
         }
     }
 
