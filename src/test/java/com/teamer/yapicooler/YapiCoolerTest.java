@@ -40,13 +40,19 @@ public class YapiCoolerTest {
     public void doCooler() throws IOException {
         log.info(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(System.currentTimeMillis()) + "接口文档备份开始");
 
+        //登录yapi
         YAPICooler.login(new YapiUser()
                 .setEmail(username)
                 .setPassword(password)
         );
 
-        //取出组并备份组项目
-        YAPICooler.backupGroupProject(YAPICooler.getGroupList());
+        //取出组项目列表
+        List<Project> projectList = YAPICooler.getGroupProject(YAPICooler.getGroupList());
+
+        //备份项目
+        for (Project project : projectList) {
+            YAPICooler.backup(new SimpleDateFormat("yyyyMMddHHmm").format(System.currentTimeMillis()), project);
+        }
 
         log.info(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(System.currentTimeMillis()) + "接口文档备份完成");
     }

@@ -2,7 +2,6 @@ package com.teamer.yapicooler.cooler.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
-import com.teamer.yapicooler.cooler.Test;
 import com.teamer.yapicooler.cooler.YapiCooler;
 import com.teamer.yapicooler.model.Group;
 import com.teamer.yapicooler.model.Project;
@@ -17,14 +16,19 @@ import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.text.SimpleDateFormat;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
 import static com.teamer.yapicooler.util.Constant.*;
+import static java.io.File.separator;
 import static org.apache.http.cookie.SM.COOKIE;
 import static org.apache.http.cookie.SM.SET_COOKIE;
 
@@ -35,9 +39,6 @@ import static org.apache.http.cookie.SM.SET_COOKIE;
 @Component
 public class YapiCoolerImpl implements YapiCooler {
 
-
-    @Autowired
-    Test test;
     /**
      * cookie保持器
      */
@@ -116,11 +117,12 @@ public class YapiCoolerImpl implements YapiCooler {
      * @throws IOException IO异常
      */
     @Override
-    public void backupGroupProject(List<Group> groupList) throws IOException {
+    public List<Project> getGroupProject(List<Group> groupList) throws IOException {
+        //组项目列表
+        List<Project> projectList = new ArrayList<>();
+
         //循环进组
         for (Group group : groupList) {
-            //组项目列表
-            List<Project> projectList = new LinkedList<>();
             //请求组内项目列表
             HttpResponse getProjectResult = httpUtil.doGet("/api/project/list?group_id=" + group.getId() + "&page=1&limit=10", cookieHolder.getCookies());
             JSONArray projectJsonArray = JSON.parseObject(EntityUtils.toString(getProjectResult.getEntity())).getJSONObject(DATA_MESSAGE).getJSONArray("list");
@@ -128,17 +130,45 @@ public class YapiCoolerImpl implements YapiCooler {
             //构建组项目列表
             for (Object object : projectJsonArray) {
                 Project project = JSON.toJavaObject(JSON.parseObject(JSON.toJSONString(object)), Project.class);
-                projectList.add(project.setGroupName(group.getGroupName()));
-            }
-            //循环调用导出数据接口并持久化
-            String nowDateTime = new SimpleDateFormat("yyyyMMddHHmm").format(System.currentTimeMillis());
-            for (Project project : projectList) {
-                test.backup(nowDateTime, project);
-                System.out.println(project.getName() + "完成备份");
+                projectList.add(project
+                        .setGroupName(group.getGroupName())
+                        .setGroupId(group.getId())
+                );
             }
         }
+        return projectList;
     }
 
 
-
+    /**
+     * 根据projectList导出并持久化项目接口文件
+     *
+     * @param nowDateTime 备份时间
+     * @param project     (
+     *                    id - 项目id
+     *                    name - 项目名
+     *                    groupId - 组id
+     *                    groupName - 组名
+     *                    )
+     * @throws IOException IO异常
+     */
+    @Async
+    @Override
+    public void backup(String nowDateTime, Project project) throws IOException {
+        HttpResponse exportResult = httpUtil.doGet("/api/plugin/export?type=json&pid=" + project.getId() + "&status=all&isWiki=false", cookieHolder.getCookies());
+        String jsonString = EntityUtils.toString(exportResult.getEntity(), StandardCharsets.UTF_8);
+        File file = new File(outputPath + separator + nowDateTime + separator + project.getGroupName() + separator + project.getName() + ".json");
+        if (!file.getParentFile().exists()) {
+            file.getParentFile().mkdirs();
+        }
+        System.out.println(project.getName());
+        if (file.exists()) {
+            Files.delete(Paths.get(file.getPath()));
+        }
+        file.createNewFile();
+        try (Writer write = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
+            write.write(jsonString);
+            write.flush();
+        }
+    }
 }

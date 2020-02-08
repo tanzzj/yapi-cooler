@@ -1,10 +1,10 @@
 cooler:
   schedule: "0/59 * * * * ? "
 yapi:
-  host: http://192.168.0.100
+  host: http://yapi.teamer.com.cn
   outputPath: /main/yapi
-  adminUsername:
-  adminPassword:
+  adminUsername: bbcckkl@live.com
+  adminPassword: me410231
 http:
   connectTimeout: 60000
 

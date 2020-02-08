@@ -27,8 +27,11 @@ public class Project {
      * 项目所属组id
      */
     @JSONField(name = "group_id")
-    private int groupId;
+    private String groupId;
 
+    /**
+     * 组名
+     */
     @JSONField(name = "group_name")
     private String groupName;
 
