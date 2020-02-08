@@ -2,6 +2,7 @@ package com.teamer.yapicooler.cooler.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
+import com.teamer.yapicooler.cooler.Test;
 import com.teamer.yapicooler.cooler.YapiCooler;
 import com.teamer.yapicooler.model.Group;
 import com.teamer.yapicooler.model.Project;
@@ -18,16 +19,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.LinkedList;
 import java.util.List;
 
 import static com.teamer.yapicooler.util.Constant.*;
-import static java.io.File.separator;
 import static org.apache.http.cookie.SM.COOKIE;
 import static org.apache.http.cookie.SM.SET_COOKIE;
 
@@ -38,6 +35,9 @@ import static org.apache.http.cookie.SM.SET_COOKIE;
 @Component
 public class YapiCoolerImpl implements YapiCooler {
 
+
+    @Autowired
+    Test test;
     /**
      * cookie保持器
      */
@@ -131,39 +131,14 @@ public class YapiCoolerImpl implements YapiCooler {
                 projectList.add(project.setGroupName(group.getGroupName()));
             }
             //循环调用导出数据接口并持久化
-            this.backup(projectList);
+            String nowDateTime = new SimpleDateFormat("yyyyMMddHHmm").format(System.currentTimeMillis());
+            for (Project project : projectList) {
+                test.backup(nowDateTime, project);
+                System.out.println(project.getName() + "完成备份");
+            }
         }
     }
 
-    /**
-     * 根据projectList导出并持久化项目接口文件
-     *
-     * @param projectList 项目列表
-     * @throws IOException IO异常
-     */
-    public void backup(List<Project> projectList) throws IOException {
-        String nowDateTime = new SimpleDateFormat("yyyyMMddHHmm").format(System.currentTimeMillis());
-        for (Project project : projectList) {
-            HttpResponse exportResult = httpUtil.doGet("/api/plugin/export?type=json&pid=" + project.getId() + "&status=all&isWiki=false", cookieHolder.getCookies());
-            String jsonString = EntityUtils.toString(exportResult.getEntity(),StandardCharsets.UTF_8);
 
-            //用户自定义路径+当前时间+组名+项目名
-            File file = new File(outputPath + separator + nowDateTime + separator + project.getGroupName() + separator + project.getName() + ".json");
-            if (!file.getParentFile().exists()) {
-                file.getParentFile().mkdirs();
-            }
-
-            if (file.exists()) {
-                Files.delete(Paths.get(file.getPath()));
-            }
-            System.out.println(jsonString);
-            file.createNewFile();
-            try (Writer write = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
-                write.write(jsonString);
-                write.flush();
-            }
-            System.out.println(project.getName() + "完成备份");
-        }
-    }
 
 }
