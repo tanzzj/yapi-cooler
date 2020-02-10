@@ -4,6 +4,7 @@ import org.apache.http.Header;
 
 /**
  * 登录cookie保持器
+ *
  * @author tanzj
  */
 public class CookieHolder {
@@ -22,10 +23,9 @@ public class CookieHolder {
     public static CookieHolder getInstance() {
         synchronized (CookieHolder.class) {
             if (cookieHolder == null) {
-                return new CookieHolder();
-            } else {
-                return cookieHolder;
+                cookieHolder = new CookieHolder();
             }
+            return cookieHolder;
         }
     }
 

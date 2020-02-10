@@ -1,6 +1,7 @@
 package com.teamer.yapicooler.schedule;
 
 import com.teamer.yapicooler.cooler.YapiCooler;
+import com.teamer.yapicooler.model.Project;
 import com.teamer.yapicooler.model.YapiUser;
 import com.teamer.yapicooler.util.Constant;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.List;
 
 /**
  * 定时任务备份
@@ -40,14 +42,18 @@ public class ScheduleBackup {
         String loginResult = yapiCooler.login(new YapiUser()
                 .setEmail(username)
                 .setPassword(password));
-        if (Constant.FAIL.equals(loginResult)){
+        if (Constant.FAIL.equals(loginResult)) {
             log.error("登录失败");
             return;
         }
-        //取出组并备份组项目
-        yapiCooler.backupGroupProject(yapiCooler.getGroupList());
 
-        log.info(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(System.currentTimeMillis()) + "接口文档备份完成");
+        //取出组项目列表
+        List<Project> projectList = yapiCooler.getGroupProject(yapiCooler.getGroupList());
+
+        //备份项目
+        for (Project project : projectList) {
+            yapiCooler.backup(new SimpleDateFormat("yyyyMMddHHmm").format(System.currentTimeMillis()), project);
+        }
     }
 
 

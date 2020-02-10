@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * yapi-cooler 启动类
  * @author tanzj
  */
+@EnableAsync
 @EnableScheduling
 @SpringBootApplication
 public class YapiCoolerApplication {

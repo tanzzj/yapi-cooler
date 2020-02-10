@@ -16,13 +16,14 @@ import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -116,11 +117,12 @@ public class YapiCoolerImpl implements YapiCooler {
      * @throws IOException IO异常
      */
     @Override
-    public void backupGroupProject(List<Group> groupList) throws IOException {
+    public List<Project> getGroupProject(List<Group> groupList) throws IOException {
+        //组项目列表
+        List<Project> projectList = new ArrayList<>();
+
         //循环进组
         for (Group group : groupList) {
-            //组项目列表
-            List<Project> projectList = new LinkedList<>();
             //请求组内项目列表
             HttpResponse getProjectResult = httpUtil.doGet("/api/project/list?group_id=" + group.getId() + "&page=1&limit=10", cookieHolder.getCookies());
             JSONArray projectJsonArray = JSON.parseObject(EntityUtils.toString(getProjectResult.getEntity())).getJSONObject(DATA_MESSAGE).getJSONArray("list");
@@ -128,42 +130,45 @@ public class YapiCoolerImpl implements YapiCooler {
             //构建组项目列表
             for (Object object : projectJsonArray) {
                 Project project = JSON.toJavaObject(JSON.parseObject(JSON.toJSONString(object)), Project.class);
-                projectList.add(project.setGroupName(group.getGroupName()));
+                projectList.add(project
+                        .setGroupName(group.getGroupName())
+                        .setGroupId(group.getId())
+                );
             }
-            //循环调用导出数据接口并持久化
-            this.backup(projectList);
         }
+        return projectList;
     }
+
 
     /**
      * 根据projectList导出并持久化项目接口文件
      *
-     * @param projectList 项目列表
+     * @param nowDateTime 备份时间
+     * @param project     (
+     *                    id - 项目id
+     *                    name - 项目名
+     *                    groupId - 组id
+     *                    groupName - 组名
+     *                    )
      * @throws IOException IO异常
      */
-    public void backup(List<Project> projectList) throws IOException {
-        String nowDateTime = new SimpleDateFormat("yyyyMMddHHmm").format(System.currentTimeMillis());
-        for (Project project : projectList) {
-            HttpResponse exportResult = httpUtil.doGet("/api/plugin/export?type=json&pid=" + project.getId() + "&status=all&isWiki=false", cookieHolder.getCookies());
-            String jsonString = EntityUtils.toString(exportResult.getEntity(),StandardCharsets.UTF_8);
-
-            //用户自定义路径+当前时间+组名+项目名
-            File file = new File(outputPath + separator + nowDateTime + separator + project.getGroupName() + separator + project.getName() + ".json");
-            if (!file.getParentFile().exists()) {
-                file.getParentFile().mkdirs();
-            }
-
-            if (file.exists()) {
-                Files.delete(Paths.get(file.getPath()));
-            }
-            System.out.println(jsonString);
-            file.createNewFile();
-            try (Writer write = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
-                write.write(jsonString);
-                write.flush();
-            }
-            System.out.println(project.getName() + "完成备份");
+    @Async
+    @Override
+    public void backup(String nowDateTime, Project project) throws IOException {
+        HttpResponse exportResult = httpUtil.doGet("/api/plugin/export?type=json&pid=" + project.getId() + "&status=all&isWiki=false", cookieHolder.getCookies());
+        String jsonString = EntityUtils.toString(exportResult.getEntity(), StandardCharsets.UTF_8);
+        File file = new File(outputPath + separator + nowDateTime + separator + project.getGroupName() + separator + project.getName() + ".json");
+        if (!file.getParentFile().exists()) {
+            file.getParentFile().mkdirs();
+        }
+        System.out.println(project.getName());
+        if (file.exists()) {
+            Files.delete(Paths.get(file.getPath()));
+        }
+        file.createNewFile();
+        try (Writer write = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
+            write.write(jsonString);
+            write.flush();
         }
     }
-
 }
