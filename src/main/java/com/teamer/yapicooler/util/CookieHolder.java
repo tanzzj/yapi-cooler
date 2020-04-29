@@ -9,7 +9,7 @@ import org.apache.http.Header;
  */
 public class CookieHolder {
 
-    private static CookieHolder cookieHolder;
+    private static volatile CookieHolder cookieHolder;
 
     public Header[] getCookies() {
         return cookies;
@@ -21,12 +21,15 @@ public class CookieHolder {
     }
 
     public static CookieHolder getInstance() {
-        synchronized (CookieHolder.class) {
-            if (cookieHolder == null) {
-                cookieHolder = new CookieHolder();
+        if (cookieHolder == null) {
+            synchronized (CookieHolder.class) {
+                if (cookieHolder == null) {
+                    System.out.println("初始化cookie!");
+                    cookieHolder = new CookieHolder();
+                }
             }
-            return cookieHolder;
         }
+        return cookieHolder;
     }
 
     public void setCookies(Header[] cookies) {
