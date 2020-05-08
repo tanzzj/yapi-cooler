@@ -52,13 +52,13 @@ public class HttpUtil {
         try {
             return httpClient.execute(httpPost, httpContext);
         } catch (IOException e) {
-            log.debug("httpPost exception ", e);
+            log.error("请求异常，请检查域名配置是否正确 " + e);
             return null;
         }
     }
 
 
-    public HttpResponse doGet(String uri, Header... header) throws IOException {
+    public HttpResponse doGet(String uri, Header... header) {
         CloseableHttpClient httpClient = HttpClientBuilder.create().build();
         HttpGet httpGet = new HttpGet(host + uri);
         RequestConfig requestConfig = RequestConfig
@@ -70,7 +70,13 @@ public class HttpUtil {
         if (!CollectionUtils.isEmpty(Arrays.asList(header))) {
             httpGet.setHeaders(header);
         }
-        return httpClient.execute(httpGet);
+        try {
+            return httpClient.execute(httpGet);
+        } catch (IOException e) {
+            log.error("请求异常，请检查域名配置是否正确 " + e);
+            return null;
+        }
+
     }
 
 }
